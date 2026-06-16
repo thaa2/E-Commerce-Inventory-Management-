@@ -9,10 +9,4 @@
 #include <FileManager.h>
 
 int main(){
-     FileManager fm;
-     Inventory inv;
-     OrderManager om;
-     CustomerManager cm;
-     AuthManager auth;
-     MenuManager menu;
 }
