@@ -5,7 +5,6 @@
 #include "../include/Customer.h"
 #include "../include/Inventory.h"
 #include <fstream>
-#include <ios>
 #include <iostream>
 #include <limits>
 #include <iomanip>
