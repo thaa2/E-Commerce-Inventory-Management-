@@ -1,36 +1,39 @@
 #include "../include/MenuManager.h"
 #include "../include/Cart.h"
-#include "../include/Order.h"
-#include "../include/User.h"
 #include "../include/Customer.h"
 #include "../include/Inventory.h"
+#include "../include/Order.h"
+#include "../include/User.h"
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <limits>
-#include <iomanip>
 
 // Helper to build order from Cart
-static Order buildOrderFromCart(const Cart& c, int orderId, int customerId, const std::string& customerName, double discount) {
-    Order o;
-    initOrder(o);
-    o.orderId = orderId;
-    o.customerId = customerId;
-    o.customerName = customerName;
-    o.dateCreated = "2026-06-25";
-    o.status = "Pending";
-    o.itemCount = 0;
-    for (int i = 0; i < c.itemCount && i < MAX_ITEMS; i++) {
-        OrderItem item;
-        item.productId = c.items[i].productId;
-        item.productName = c.items[i].productName;
-        item.quantity = c.items[i].quantity;
-        item.unitPrice = c.items[i].unitPrice;
-        o.items[o.itemCount++] = item;
-    }
-    recalculateOrderTotal(o);
-    o.totalAmount -= discount;
-    if (o.totalAmount < 0) o.totalAmount = 0;
-    return o;
+static Order buildOrderFromCart(const Cart &c, int orderId, int customerId,
+                                const std::string &customerName,
+                                double discount) {
+  Order o;
+  initOrder(o);
+  o.orderId = orderId;
+  o.customerId = customerId;
+  o.customerName = customerName;
+  o.dateCreated = "2026-06-25";
+  o.status = "Pending";
+  o.itemCount = 0;
+  for (int i = 0; i < c.itemCount && i < MAX_ITEMS; i++) {
+    OrderItem item;
+    item.productId = c.items[i].productId;
+    item.productName = c.items[i].productName;
+    item.quantity = c.items[i].quantity;
+    item.unitPrice = c.items[i].unitPrice;
+    o.items[o.itemCount++] = item;
+  }
+  recalculateOrderTotal(o);
+  o.totalAmount -= discount;
+  if (o.totalAmount < 0)
+    o.totalAmount = 0;
+  return o;
 }
 
 // CONSTRUCTOR
@@ -521,8 +524,8 @@ void MenuManager::showReportMenu() {
         }
       }
       std::cout << "Total Orders  :" << orderCount << "\n";
-      std::cout << "Total Revenue : $ " << std::fixed << std::setprecision(2) << revenue
-                << "\n";
+      std::cout << "Total Revenue : $ " << std::fixed << std::setprecision(2)
+                << revenue << "\n";
       pause();
     }
   }
@@ -583,27 +586,27 @@ void MenuManager::showUserMenu() {
 // LOAD / SAVE ORDER
 
 void MenuManager::loadOrders(const std::string &path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-      return;
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    return;
+  }
+  std::string line;
+  std::getline(file, line); // skip header
+  while (std::getline(file, line)) {
+    if (line.empty())
+      continue;
+    orders[orderCount] = orderFromCSV(line);
+    if (orders[orderCount].orderId >= nextOrderId) {
+      nextOrderId = orders[orderCount].orderId + 1;
     }
-    std::string line;
-    std::getline(file, line); // skip header
-    while (std::getline(file, line)) {
-      if (line.empty())
-        continue;
-      orders[orderCount] = orderFromCSV(line);
-      if (orders[orderCount].orderId >= nextOrderId) {
-        nextOrderId = orders[orderCount].orderId + 1;
-      }
-      orderCount++;
-    }
+    orderCount++;
+  }
 }
 
-void MenuManager::saveOrders(const std::string& path) const {
-    std::ofstream file(path);
-    file << "orderId,customerId,customerName,date,discount,status,items\n";
-    for (int i = 0; i < orderCount; i++) {
-      file << orderToCSV(orders[i]) << "\n";
-    }
+void MenuManager::saveOrders(const std::string &path) const {
+  std::ofstream file(path);
+  file << "orderId,customerId,customerName,date,discount,status,items\n";
+  for (int i = 0; i < orderCount; i++) {
+    file << orderToCSV(orders[i]) << "\n";
+  }
 }
