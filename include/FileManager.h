@@ -6,11 +6,11 @@
 // ---------------------------------------------------------
 // Plain file I/O helper functions — no class, no struct.
 // ---------------------------------------------------------
-int  readLines(const std::string& filepath, std::string outLines[], int max);
-bool writeLines(const std::string& filepath, std::string lines[], int count);
-bool ensureFile(const std::string& filepath);
+static int  readLines(const std::string& filepath, std::string outLines[], int max);
+static bool writeLines(const std::string& filepath, std::string lines[], int count);
+static bool ensureFile(const std::string& filepath);
 
-int  splitCSV(const std::string& line, std::string outFields[], int max);
-std::string joinCSV(std::string fields[], int count);
+static int  splitCSV(const std::string& line, std::string outFields[], int max);
+static std::string joinCSV(std::string fields[], int count);
 
 #endif // FILEMANAGER_H
