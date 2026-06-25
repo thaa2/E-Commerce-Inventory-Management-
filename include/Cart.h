@@ -40,9 +40,9 @@ struct Cart {
 // Free functions — Cart
 // ---------------------------------------------------------
 void   initCart(Cart& c);                                  // reset to defaults
-bool   addCartItem(Cart& c, const CartItem& item, int availableStock);
-bool   removeCartItem(Cart& c, int productId);
-bool   undoLastCartAction(Cart& c);
+bool   addItem(Cart& c, const CartItem& item, int availableStock);
+bool   removeItem(Cart& c, int productId);
+bool   undoLast(Cart& c);
 void   displayCart(const Cart& c);
 bool   isCartEmpty(const Cart& c);
 void   clearCart(Cart& c);

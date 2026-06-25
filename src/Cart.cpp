@@ -13,7 +13,7 @@ void initCart(Cart& c) {
 // Stack helpers (undo history) — LIFO, plain array
 // ===========================================================
 
-void pushCartHistory(Cart& c, const CartAction& action) {
+void pushHistory(Cart& c, const CartAction& action) {
     if (c.top >= MAX_HISTORY - 1) {
         return;   // history full, oldest actions just become un-undoable
     }
@@ -21,7 +21,7 @@ void pushCartHistory(Cart& c, const CartAction& action) {
     c.history[c.top] = action;
 }
 
-bool popCartHistory(Cart& c, CartAction& out) {
+bool popHistory(Cart& c, CartAction& out) {
     if (c.top == -1) {
         return false;
     }
