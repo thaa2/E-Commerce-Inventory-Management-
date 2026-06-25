@@ -1,46 +1,30 @@
-#include "User.h"
-#include "MenuManager.h"
+#include "../include/AuthManager.h"
+#include "../include/Cart.h"
+#include "../include/Customer.h"
+#include "../include/User.h"
+#include "../include/Order.h"
+#include "../include/MenuManager.h"
+#include "../include/FileManager.h"
+#include "../include/Inventory.h"
 #include <iostream>
-#include <limits>
 
 int main() {
-    std::cout << "==================================================\n";
-    std::cout << "        E-COMMERCE MANAGEMENT SYSTEM CLI          \n";
-    std::cout << "==================================================\n";
+    Inventory inventory;
+    CustomerBST customers;
+    AuthManager auth;
 
-    // Initialise the users CSV with default accounts if it doesn't exist
-    UserCSV();
+    // Load database files
+    inventory.loadFromFile("data/products.csv");
+    customers.loadFromFile("data/customers.csv");
 
-    UserRecord userArray[MAX_USERS];
-    int userCount = 0;
-    loadCSVToArray(userArray, userCount);
+    MenuManager menu(inventory, customers, auth);
+    menu.loadOrders("data/orders.csv");
 
-    // ── Login loop ──────────────────────────────────
-    UserRecord loggedIn = {"", "", "", NONE};
-    while (loggedIn.role == NONE) {
-        std::cout << "\n--- Login ---\n";
-        std::cout << "User ID  : ";
-        std::string id;
-        std::getline(std::cin, id);
+    // Login screen
+    menu.showLoginScreen();
 
-        std::cout << "Password : ";
-        std::string password;
-        std::getline(std::cin, password);
-
-        loggedIn = verUsr(userArray, userCount, id, password);
-    }
-
-    // Show role
-    std::cout << "\nWelcome, " << loggedIn.name << "!  Role: ";
-    switch (loggedIn.role) {
-        case ADMIN:    std::cout << "Admin\n";    break;
-        case STAFF:    std::cout << "Staff\n";    break;
-        case CUSTOMER: std::cout << "Customer\n"; break;
-        default:       std::cout << "Unknown\n";  break;
-    }
-
-    // ── Main application ─────────────────────────────
-    runMainMenu();
+    // Main application menu
+    menu.showMainMenu();
 
     return 0;
 }

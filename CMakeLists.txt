@@ -4,17 +4,23 @@ project(ECommerceInventory CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Collect all .cpp files in src/
-file(GLOB SOURCES "src/*.cpp")
+set(SOURCES
+    src/main.cpp
+    src/AuthManager.cpp
+    src/Cart.cpp
+    src/Customer.cpp
+    src/FileManager.cpp
+    src/Inventory.cpp
+    src/MenuManager.cpp
+    src/Order.cpp
+    src/Product.cpp
+    src/User.cpp
+)
 
 add_executable(ecommerce ${SOURCES})
 
-# Make #include "Header.h" work without specifying the path
 target_include_directories(ecommerce PRIVATE include)
 
-# Copy the data/ directory into the build folder so the executable can find
-# data/products.csv, data/customers.csv, data/orders.csv, data/users.csv
-# when run from the build directory.
 add_custom_command(TARGET ecommerce POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/data

@@ -1,15 +1,47 @@
 #include "../include/MenuManager.h"
+#include "../include/Cart.h"
+#include "../include/Order.h"
+#include "../include/User.h"
+#include "../include/Customer.h"
+#include "../include/Inventory.h"
 #include <fstream>
 #include <ios>
 #include <iostream>
 #include <limits>
+#include <iomanip>
+
+// Helper to build order from Cart
+static Order buildOrderFromCart(const Cart& c, int orderId, int customerId, const std::string& customerName, double discount) {
+    Order o;
+    initOrder(o);
+    o.orderId = orderId;
+    o.customerId = customerId;
+    o.customerName = customerName;
+    o.dateCreated = "2026-06-25";
+    o.status = "Pending";
+    o.itemCount = 0;
+    for (int i = 0; i < c.itemCount && i < MAX_ITEMS; i++) {
+        OrderItem item;
+        item.productId = c.items[i].productId;
+        item.productName = c.items[i].productName;
+        item.quantity = c.items[i].quantity;
+        item.unitPrice = c.items[i].unitPrice;
+        o.items[o.itemCount++] = item;
+    }
+    recalculateOrderTotal(o);
+    o.totalAmount -= discount;
+    if (o.totalAmount < 0) o.totalAmount = 0;
+    return o;
+}
 
 // CONSTRUCTOR
 
 MenuManager::MenuManager(Inventory &inv, CustomerBST &cust, AuthManager &a)
-    : inventory(inv), customer(cust), auth(a) {
+    : inventory(inv), customers(cust), auth(a) {
   orderCount = 0;
   nextOrderId = 1;
+  initCart(cart);
+  initOrderQueue(orderQueue);
 }
 
 // STATIC HELPERS
@@ -38,7 +70,7 @@ int MenuManager::getInt(const std::string &prompt, int minVal, int maxVal) {
   while (true) {
     std::cout << " " << prompt;
     std::cin >> val;
-    if (!std::cin.fail() && val > minVal && val <= maxVal) {
+    if (!std::cin.fail() && val >= minVal && val <= maxVal) {
       std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       return val;
     } else {
@@ -111,41 +143,40 @@ void MenuManager::showMainMenu() {
     std::cout << " 5. Reports\n";
     if (auth.isAdmin()) {
       std::cout << " 6. User Management\n";
-      std::cout << " 0. Logout\n";
+    }
+    std::cout << " 0. Logout\n";
 
-      int ch = getInt("Select: ", 0, auth.isAdmin() ? 6 : 5);
-      switch (ch) {
-      case 1:
-        showInventoryMenu();
-        break;
-      case 2:
-        showCartMenu();
-        break;
-      case 3:
-        showOrderMenu();
-        break;
-      case 4:
-        showCustomerMenu();
-        break;
-      case 5:
-        showReportMenu();
-        break;
-      case 6:
-        if (auth.isAdmin()) {
-          showUserMenu();
-          break;
-        }
-
-      case 0:
-        auth.logout();
-        std::cout << "\n Logged Out.\n";
-        return;
+    int ch = getInt("Select: ", 0, auth.isAdmin() ? 6 : 5);
+    switch (ch) {
+    case 1:
+      showInventoryMenu();
+      break;
+    case 2:
+      showCartMenu();
+      break;
+    case 3:
+      showOrderMenu();
+      break;
+    case 4:
+      showCustomerMenu();
+      break;
+    case 5:
+      showReportMenu();
+      break;
+    case 6:
+      if (auth.isAdmin()) {
+        showUserMenu();
       }
+      break;
+    case 0:
+      auth.logout();
+      std::cout << "\n Logged Out.\n";
+      return;
     }
   }
 }
 
-// INVENOTORY MENU
+// INVENTORY MENU
 
 void MenuManager::showInventoryMenu() {
   while (true) {
@@ -191,8 +222,8 @@ void MenuManager::showInventoryMenu() {
       inventory.sortByPrice(arr, n);
       for (int i = 0; i < n; i++) {
         arr[i].display();
-        pause();
       }
+      pause();
     } else if (ch == 4) {
       header("SORT BY NAME\n");
       Product arr[200];
@@ -200,8 +231,8 @@ void MenuManager::showInventoryMenu() {
       inventory.sortByName(arr, n);
       for (int i = 0; i < n; i++) {
         arr[i].display();
-        pause();
       }
+      pause();
     } else if (ch == 5) {
       header("SORT BY QUANTITY\n");
       Product arr[200];
@@ -209,8 +240,8 @@ void MenuManager::showInventoryMenu() {
       inventory.sortByQuantity(arr, n);
       for (int i = 0; i < n; i++) {
         arr[i].display();
-        pause();
       }
+      pause();
     } else if (ch == 6) {
       header("LOW STOCK ALERT\n");
       inventory.displayLowStock();
@@ -218,14 +249,17 @@ void MenuManager::showInventoryMenu() {
     } else if (ch == 7) {
       header("ADD PRODUCT\n");
       Product p;
+      p.id = 0;
       p.sku = getString("SKU  :");
       p.name = getString("Name :");
-      p.category = getstring("Category :");
+      p.category = getString("Category :");
       p.price = getInt("Price  :", 0, 999999);
       p.quantity = getInt("Quantity :", 0, 99999);
-      p.reorderLevel = getInt("Reorder Level:  :", 0, 99999);
+      p.reorderLevel = getInt("Reorder Level  :", 0, 99999);
+      p.reorderThreshold = p.reorderLevel;
       inventory.addProduct(p);
       std::cout << " Product added\n";
+      inventory.saveToFile("data/products.csv");
       pause();
     } else if (ch == 8 && auth.isAdmin()) {
       header("DELETE PRODUCT\n");
@@ -237,6 +271,7 @@ void MenuManager::showInventoryMenu() {
         p->display();
         if (confirm("Delete this product?\n")) {
           inventory.removeProduct(id);
+          inventory.saveToFile("data/products.csv");
           std::cout << "DELETED!\n";
         }
       }
@@ -266,11 +301,11 @@ void MenuManager::showCartMenu() {
     cls();
     if (ch == 1) {
       header("CART CONTENTS");
-      cart.display();
+      displayCart(cart);
       pause();
     } else if (ch == 2) {
       header("ADD ITEM");
-      int sku = getString("Product SKU: ");
+      std::string sku = getString("Product SKU: ");
       int id = inventory.hashSearch(sku);
       if (id == -1) {
         std::cout << " ! Product Not Found\n";
@@ -288,14 +323,14 @@ void MenuManager::showCartMenu() {
       item.unitPrice = p->price;
       item.quantity = qty;
 
-      cart.addItem(item, p->quantity);
+      addItem(cart, item, p->quantity);
       std::cout << " Added to Cart!\n";
       pause();
     } else if (ch == 3) {
       header("REMOVE ITEM");
-      cart.display();
+      displayCart(cart);
       int id = getInt("Product ID to remove: ", 1, 999999);
-      if (cart.removeItem(id)) {
+      if (removeItem(cart, id)) {
         std::cout << " Removed.\n";
       } else {
         std::cout << " ! Not in cart.\n";
@@ -303,23 +338,23 @@ void MenuManager::showCartMenu() {
       }
     } else if (ch == 4) {
       header("UNDO");
-      if (!cart.undoLast()) {
+      if (!undoLast(cart)) {
         std::cout << " ! Nothing to undo.\n";
         pause();
       } else {
-        cart.undoList();
+        pause();
       }
     } else if (ch == 5) {
       header("CHECKOUT");
-      if (cart.isEmpty()) {
+      if (isCartEmpty(cart)) {
         pause();
         continue;
       }
-      cart.display();
+      displayCart(cart);
 
       std::string name = getString("Customer name: ");
       CustomerNode *cn = customers.search(name);
-      int cusId = cn ? cn->data.id : 0;
+      int custId = cn ? cn->data.id : 0;
       if (!cn) {
         std::cout << "Walk-in customer\n";
       }
@@ -330,24 +365,25 @@ void MenuManager::showCartMenu() {
       if (!confirm("Confirm Checkout?")) {
         std::cout << "Cancelled\n";
         pause();
-        continus;
+        continue;
       }
-      Order o = cart.buildOrder(nextorderId++, custId, name, discount);
+      Order o = buildOrderFromCart(cart, nextOrderId++, custId, name, discount);
 
       for (int i = 0; i < o.itemCount; i++) {
-        inventory.adjustStock(o.item[i].productId, -o.item[i].quantity);
+        inventory.adjustStock(o.items[i].productId, -o.items[i].quantity);
       }
-      orderQueue.enqueue(o);
+      inventory.saveToFile("data/products.csv");
+      enqueueOrder(orderQueue, o);
       orders[orderCount++] = o;
-      saveorders("data/orders.csv");
-      o.display();
-      cart.clear();
+      saveOrders("data/orders.csv");
+      displayOrder(o);
+      clearCart(cart);
       std::cout << "\n Checkout Complete \n";
       pause();
 
     } else if (ch == 6) {
       if (confirm("Clear cart?")) {
-        cart.clear();
+        clearCart(cart);
         std::cout << "Cart Cleared.\n";
       }
       pause();
@@ -364,9 +400,9 @@ void MenuManager::showOrderMenu() {
     std::cout << " 1. Process Next Order\n";
     std::cout << " 2. View Pending Queue\n";
     std::cout << " 3. View Order History\n";
-    std::cout << " 0. Back\n\n\";
+    std::cout << " 0. Back\n\n";
 
-        int ch = getInt("Select: ", 0, 3);
+    int ch = getInt("Select: ", 0, 3);
     if (ch == 0) {
       return;
     }
@@ -374,185 +410,190 @@ void MenuManager::showOrderMenu() {
     if (ch == 1) {
       header("PROCESS NEXT ORDER\n");
       Order o;
-      if (orderQueue.dequeue(o)) {
-        o.status = Status::Complete;
+      if (dequeueOrder(orderQueue, o)) {
+        o.status = "Complete";
         std::cout << " Order #" << o.orderId << " for " << o.customerName
                   << " -Completed!\n";
-        for (int i = 0; i < orderCount; i++)
-          if (orders[i].orderId == o.orderId) {
-            orders[i].status = Status::Complete;
-            saveOrders("data/orders.csv");
-          } else {
-            std::cout << " ! No pending orders.\n";
-          }
-        pause();
-      } else if (ch == 2) {
-        header("PENDING QUEUE");
-        orderQueue.displayAll();
-        pause();
-      } else if (ch == 3) {
-        header("ORDER HISTORY");
-        if (orderCount == 0) {
-          std::cout << "No orders yet.\n";
-        } else {
-          for (int i = 0; i < orderCount; i++) {
-            orders[i].display();
-          }
-          pause();
-        }
-      }
-    }
-  }
-
-  // CUSTOMERS
-
-  void MenuManager::showCustomerMenu() {
-    while (true) {
-      cls();
-      header("CUSTOMERS");
-      std::cout << " 1. View All\n";
-      std::cout << " 2. Search by Name\n";
-      std::cout << " 3. Add Coutomer\n";
-      std::cout << " 0. Back\n\n";
-
-      int ch = getInt("Select: ", 0, 3);
-      if (ch == 0) {
-        return;
-      }
-      cls();
-      if (ch == 1) {
-        header("ALL CUSTOMERS");
-        customers.displayAll();
-        pause();
-      } else if (ch == 2) {
-        header("SEARCH CUSTOMERS");
-        std::string name = getString("Name: ");
-        CustomerNode *n = customers.search(name);
-        if (!n) {
-          std::cout << " ! Not Found\n";
-        } else {
-          n->data.display();
-        }
-        pause();
-      } else if (ch == 3) {
-        header("ADD CUSTOMER");
-        Customer c;
-        c.name = getString("Name    :");
-        c.email = getString("Email  :");
-        c.phone = getString("Phone  :");
-        customers.insert(c);
-        customers.saveToFile("data/customers.csv");
-        std::cout << "Customer added!\n";
-        pause();
-      }
-    }
-  }
-
-  // REPORTS MENU
-
-  void MenuManager::showReportMenu() {
-    while (true) {
-      cls();
-      header("REPORTS");
-      std::cout << " 1. Inventory Value\n";
-      std::cout << " 2. Low Stock\n";
-      std::cout << " 3. Revenue Summary\n";
-      std::cout << " 0. Back\n\n";
-
-      int ch = getInt("Select: ", 0, 3);
-      if (ch == 0) {
-        return;
-      }
-      cls();
-      if (ch == 1) {
-        header("INVENTORY VALUE\n");
-        inventory.displayAll();
-        std::cout << "\n Total Value: $" << fixed << setprecision(2)
-                  << inventory.totalValue() << "\n";
-        pause();
-      } else if (ch == 2) {
-        header("LOW STOCK");
-        inventory.displayLowStock();
-        pause();
-      } else if (ch == 3) {
-        header("REVENUE SUMMARY");
-        double revenue = 0;
         for (int i = 0; i < orderCount; i++) {
-          if (orders[i].status == Status::Completed) {
-            revenue += orders[i] getTotal();
+          if (orders[i].orderId == o.orderId) {
+            orders[i].status = "Complete";
+            saveOrders("data/orders.csv");
           }
         }
-        std::cout << "Total Orders  :" << orderCount << "\n";
-        std::cout << "Total Revenue : $ " << fixed << setprecision(2) << revenue
-                  << "\n";
-        pause();
+      } else {
+        std::cout << " ! No pending orders.\n";
       }
+      pause();
+    } else if (ch == 2) {
+      header("PENDING QUEUE");
+      displayAllOrders(orderQueue);
+      pause();
+    } else if (ch == 3) {
+      header("ORDER HISTORY");
+      if (orderCount == 0) {
+        std::cout << "No orders yet.\n";
+      } else {
+        for (int i = 0; i < orderCount; i++) {
+          displayOrder(orders[i]);
+        }
+      }
+      pause();
     }
   }
+}
 
-  // USER MENU
+// CUSTOMERS
 
-  void MenuManager::showUserMenu() {
-    while (true) {
-      cls();
-      header("USER MANAGEMENT");
-      std::cout << " 1. View All Users\n";
-      std::cout << " 2. Add User\n";
-      std::cout << " 3. Deactivate User\n";
-      std::cout << " 4. Back\n\n";
+void MenuManager::showCustomerMenu() {
+  while (true) {
+    cls();
+    header("CUSTOMERS");
+    std::cout << " 1. View All\n";
+    std::cout << " 2. Search by Name\n";
+    std::cout << " 3. Add Customer\n";
+    std::cout << " 0. Back\n\n";
 
-      int ch = getInt("Select: ", 0, 3);
-      if (ch == 0) {
-        return;
+    int ch = getInt("Select: ", 0, 3);
+    if (ch == 0) {
+      return;
+    }
+    cls();
+    if (ch == 1) {
+      header("ALL CUSTOMERS");
+      customers.displayAll();
+      pause();
+    } else if (ch == 2) {
+      header("SEARCH CUSTOMERS");
+      std::string name = getString("Name: ");
+      CustomerNode *n = customers.search(name);
+      if (!n) {
+        std::cout << " ! Not Found\n";
+      } else {
+        n->data.display();
       }
-      cls();
+      pause();
+    } else if (ch == 3) {
+      header("ADD CUSTOMER");
+      Customer c;
+      c.id = 0;
+      c.name = getString("Name    :");
+      c.email = getString("Email  :");
+      c.phone = getString("Phone  :");
+      customers.insert(c);
+      customers.saveToFile("data/customers.csv");
+      std::cout << "Customer added!\n";
+      pause();
+    }
+  }
+}
 
-      if (ch == 1) {
-        header("ALL USERS");
-        auth.displayAll();
-        pause();
-      } else if (ch == 2) {
-        header("ADD USER");
-        u.username = getString("Username: ");
-        std::string pass = getString("Password: ");
-        u.passwordHash = User::hashPassword(pass);
-        int r = getInt("Role (1=Admin 2=Staff): ", 1, 2);
-        u.role = (r == 1) ? "Admin" : "Staff";
-        u.isActive = true;
-        if (auth.addUser(u)) {
-          std::cout << " User added\n";
+// REPORTS MENU
+
+void MenuManager::showReportMenu() {
+  while (true) {
+    cls();
+    header("REPORTS");
+    std::cout << " 1. Inventory Value\n";
+    std::cout << " 2. Low Stock\n";
+    std::cout << " 3. Revenue Summary\n";
+    std::cout << " 0. Back\n\n";
+
+    int ch = getInt("Select: ", 0, 3);
+    if (ch == 0) {
+      return;
+    }
+    cls();
+    if (ch == 1) {
+      header("INVENTORY VALUE\n");
+      inventory.displayAll();
+      std::cout << "\n Total Value: $" << std::fixed << std::setprecision(2)
+                << inventory.totalValue() << "\n";
+      pause();
+    } else if (ch == 2) {
+      header("LOW STOCK");
+      inventory.displayLowStock();
+      pause();
+    } else if (ch == 3) {
+      header("REVENUE SUMMARY");
+      double revenue = 0;
+      for (int i = 0; i < orderCount; i++) {
+        if (orders[i].status == "Complete" || orders[i].status == "Completed") {
+          revenue += orders[i].totalAmount;
+        }
+      }
+      std::cout << "Total Orders  :" << orderCount << "\n";
+      std::cout << "Total Revenue : $ " << std::fixed << std::setprecision(2) << revenue
+                << "\n";
+      pause();
+    }
+  }
+}
+
+// USER MENU
+
+void MenuManager::showUserMenu() {
+  while (true) {
+    cls();
+    header("USER MANAGEMENT");
+    std::cout << " 1. View All Users\n";
+    std::cout << " 2. Add User\n";
+    std::cout << " 3. Deactivate User\n";
+    std::cout << " 0. Back\n\n";
+
+    int ch = getInt("Select: ", 0, 3);
+    if (ch == 0) {
+      return;
+    }
+    cls();
+
+    if (ch == 1) {
+      header("ALL USERS");
+      auth.displayAll();
+      pause();
+    } else if (ch == 2) {
+      header("ADD USER");
+      UserRecord u;
+      u.name = getString("Username: ");
+      std::string pass = getString("Password: ");
+      u.passwordHash = hashPassword(pass);
+      int r = getInt("Role (1=Admin 2=Staff): ", 1, 2);
+      u.role = (r == 1) ? ADMIN : STAFF;
+      u.id = "00" + std::to_string(rand() % 100 + 10); // Simple ID generator
+      if (auth.addUser(u)) {
+        std::cout << " User added\n";
+      } else {
+        std::cout << " ! Failed (Duplicate or Full)\n";
+      }
+      pause();
+    } else if (ch == 3) {
+      header("DEACTIVATE USER");
+      auth.displayAll();
+      int id = getInt("User ID: ", 1, 999);
+      if (confirm("Deactivate?")) {
+        if (auth.deactivateUser(id)) {
+          std::cout << "User deactivated.\n";
         } else {
-          std::cout << " ! Failed (Duplicate or Full)\n";
+          std::cout << " ! Not Found\n";
         }
-        pause();
-      } else if (ch == 3) {
-        header("DEACTIVATE USER");
-        auth.displayAll();
-        int id = getInt("User ID: ", 1, 999);
-        if (confirm("Deactivate?")) {
-          if (auth.deactivateUser(id)) {
-            std::cout << "User deactivated.\n";
-          } else {
-            std::cout << " ! Not Found\n";
-          }
-        }
-        pause();
       }
+      pause();
     }
   }
+}
 
-  // LOAD / SAVE ORDER
-void MenuManager::loadOrders(const std::string &pat{
-    ifstream file(path);
+// LOAD / SAVE ORDER
+
+void MenuManager::loadOrders(const std::string &path) {
+    std::ifstream file(path);
     if (!file.is_open()) {
       return;
     }
-    string line;
-    getline(file, line); // skip header
-    while (getline(file, line)) {
+    std::string line;
+    std::getline(file, line); // skip header
+    while (std::getline(file, line)) {
       if (line.empty())
         continue;
-      orders[orderCount] = Order::fromCSV(line);
+      orders[orderCount] = orderFromCSV(line);
       if (orders[orderCount].orderId >= nextOrderId) {
         nextOrderId = orders[orderCount].orderId + 1;
       }
@@ -560,10 +601,10 @@ void MenuManager::loadOrders(const std::string &pat{
     }
 }
 
-void MenuManager::saveOrders(const std::string& path) const{
-    ofstream file(path);
+void MenuManager::saveOrders(const std::string& path) const {
+    std::ofstream file(path);
     file << "orderId,customerId,customerName,date,discount,status,items\n";
     for (int i = 0; i < orderCount; i++) {
-      file << orders[i].toCSV() << "\n";
+      file << orderToCSV(orders[i]) << "\n";
     }
 }

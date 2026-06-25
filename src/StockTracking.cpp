@@ -4,9 +4,6 @@
 #include <iomanip>
 #include <limits>
 
-// ──────────────────────────────────────────────
-// Print low-stock alerts for products at or below threshold
-// ──────────────────────────────────────────────
 void checkStockAlerts() {
     std::vector<Product> products = loadProducts();
     bool anyAlert = false;
@@ -27,10 +24,6 @@ void checkStockAlerts() {
         std::cout << "[Stock] All products are sufficiently stocked.\n";
     }
 }
-
-// ──────────────────────────────────────────────
-// Display full inventory status table
-// ──────────────────────────────────────────────
 void viewInventoryStatus() {
     std::vector<Product> products = loadProducts();
     std::cout << "\n--- Full Inventory Status ---\n";
@@ -56,9 +49,6 @@ void viewInventoryStatus() {
     }
 }
 
-// ──────────────────────────────────────────────
-// Interactive menu
-// ──────────────────────────────────────────────
 void stockTrackingMenu() {
     while (true) {
         std::cout << "\n====================================\n";

@@ -13,15 +13,15 @@ void initCart(Cart& c) {
 // Stack helpers (undo history) — LIFO, plain array
 // ===========================================================
 
-void pushHistory(Cart& c, const CartAction& action) {
+void pushCartHistory(Cart& c, const CartAction& action) {
     if (c.top >= MAX_HISTORY - 1) {
-        return;   // history full, oldest actions just become un-undoable
+        return;   // history full
     }
     c.top++;
     c.history[c.top] = action;
 }
 
-bool popHistory(Cart& c, CartAction& out) {
+bool popCartHistory(Cart& c, CartAction& out) {
     if (c.top == -1) {
         return false;
     }
@@ -43,7 +43,7 @@ int findCartIndexByProductId(const Cart& c, int productId) {
     return -1;
 }
 
-bool addCartItem(Cart& c, const CartItem& item, int availableStock) {
+bool addItem(Cart& c, const CartItem& item, int availableStock) {
     if (item.quantity <= 0) {
         cout << "Quantity must be positive.\n";
         return false;
@@ -73,7 +73,7 @@ bool addCartItem(Cart& c, const CartItem& item, int availableStock) {
     return true;
 }
 
-bool removeCartItem(Cart& c, int productId) {
+bool removeItem(Cart& c, int productId) {
     int idx = findCartIndexByProductId(c, productId);
     if (idx == -1) {
         return false;
@@ -86,7 +86,7 @@ bool removeCartItem(Cart& c, int productId) {
     return true;
 }
 
-bool undoLastCartAction(Cart& c) {
+bool undoLast(Cart& c) {
     CartAction last;
     if (!popCartHistory(c, last)) {
         cout << "Nothing to undo.\n";
@@ -94,7 +94,7 @@ bool undoLastCartAction(Cart& c) {
     }
 
     if (last.type == "ADD") {
-        removeCartItem(c, last.item.productId);
+        removeItem(c, last.item.productId);
         cout << "Undid: removed " << last.item.productName << " from cart.\n";
     } else if (last.type == "REMOVE") {
         if (c.itemCount < MAX_CART) {
