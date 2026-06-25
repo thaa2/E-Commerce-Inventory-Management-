@@ -2,8 +2,6 @@
 #include <iostream>
 #include <iomanip>
 
-using namespace std;
-
 void initCart(Cart& c) {
     c.itemCount = 0;
     c.top       = -1;
@@ -45,11 +43,11 @@ int findCartIndexByProductId(const Cart& c, int productId) {
 
 bool addItem(Cart& c, const CartItem& item, int availableStock) {
     if (item.quantity <= 0) {
-        cout << "Quantity must be positive.\n";
+        std::cout << "Quantity must be positive.\n";
         return false;
     }
     if (item.quantity > availableStock) {
-        cout << "Not enough stock available for " << item.productName << ".\n";
+        std::cout << "Not enough stock available for " << item.productName << ".\n";
         return false;
     }
 
@@ -58,7 +56,7 @@ bool addItem(Cart& c, const CartItem& item, int availableStock) {
         c.items[existing].quantity += item.quantity;
     } else {
         if (c.itemCount >= MAX_CART) {
-            cout << "Cart is full, cannot add more items.\n";
+            std::cout << "Cart is full, cannot add more items.\n";
             return false;
         }
         c.items[c.itemCount] = item;
@@ -89,36 +87,36 @@ bool removeItem(Cart& c, int productId) {
 bool undoLast(Cart& c) {
     CartAction last;
     if (!popCartHistory(c, last)) {
-        cout << "Nothing to undo.\n";
+        std::cout << "Nothing to undo.\n";
         return false;
     }
 
     if (last.type == "ADD") {
         removeItem(c, last.item.productId);
-        cout << "Undid: removed " << last.item.productName << " from cart.\n";
+        std::cout << "Undid: removed " << last.item.productName << " from cart.\n";
     } else if (last.type == "REMOVE") {
         if (c.itemCount < MAX_CART) {
             c.items[c.itemCount] = last.item;
             c.itemCount++;
         }
-        cout << "Undid: restored " << last.item.productName << " to cart.\n";
+        std::cout << "Undid: restored " << last.item.productName << " to cart.\n";
     }
     return true;
 }
 
 void displayCart(const Cart& c) {
     if (c.itemCount == 0) {
-        cout << "Cart is empty.\n";
+        std::cout << "Cart is empty.\n";
         return;
     }
-    cout << "===== Your Cart =====\n";
-    cout << left << setw(6) << "Qty" << setw(20) << "Product" << setw(10) << "Price" << "\n";
+    std::cout << "===== Your Cart =====\n";
+    std::cout << std::left << std::setw(6) << "Qty" << std::setw(20) << "Product" << std::setw(10) << "Price" << "\n";
     for (int i = 0; i < c.itemCount; i++) {
-        cout << left << setw(6) << c.items[i].quantity
-             << setw(20) << c.items[i].productName
-             << setw(10) << fixed << setprecision(2) << c.items[i].unitPrice << "\n";
+        std::cout << std::left << std::setw(6) << c.items[i].quantity
+             << std::setw(20) << c.items[i].productName
+             << std::setw(10) << std::fixed << std::setprecision(2) << c.items[i].unitPrice << "\n";
     }
-    cout << "Total: $" << fixed << setprecision(2) << getCartTotal(c) << "\n";
+    std::cout << "Total: $" << std::fixed << std::setprecision(2) << getCartTotal(c) << "\n";
 }
 
 bool isCartEmpty(const Cart& c) {
