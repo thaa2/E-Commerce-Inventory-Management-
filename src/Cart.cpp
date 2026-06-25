@@ -43,7 +43,7 @@ int findCartIndexByProductId(const Cart& c, int productId) {
     return -1;
 }
 
-bool addCartItem(Cart& c, const CartItem& item, int availableStock) {
+bool addItem(Cart& c, const CartItem& item, int availableStock) {
     if (item.quantity <= 0) {
         cout << "Quantity must be positive.\n";
         return false;
@@ -73,7 +73,7 @@ bool addCartItem(Cart& c, const CartItem& item, int availableStock) {
     return true;
 }
 
-bool removeCartItem(Cart& c, int productId) {
+bool removeItem(Cart& c, int productId) {
     int idx = findCartIndexByProductId(c, productId);
     if (idx == -1) {
         return false;
@@ -86,7 +86,7 @@ bool removeCartItem(Cart& c, int productId) {
     return true;
 }
 
-bool undoLastCartAction(Cart& c) {
+bool undoLast(Cart& c) {
     CartAction last;
     if (!popCartHistory(c, last)) {
         cout << "Nothing to undo.\n";
