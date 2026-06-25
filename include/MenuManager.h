@@ -1,41 +1,43 @@
-#include <Inventory.h>
-#include <Customer.h>
-#include <AuthManager.h>
-#include <Order.h>
-#include <Cart.h>
-#include <string>
-#include <iostream>
-using namespace std;
+#ifndef MENUMANAGER_H
+#define MENUMANAGER_H
+#include "AuthManager.h"
+#include "Cart.h"
+#include "Customer.h"
+#include "Inventory.h"
+#include "Order.h"
 
-class MenuManager{
-    public:
-        Inventory&      inventory;
-        CustomerBST&    customer;
-        AuthManager&    auth;
+class MenuManager {
+public:
+  Inventory &inventory;
+  CustomerBST &customers;
+  AuthManager &auth;
 
-        Order           orders[MAX_ORDERS];
-        int             orderCount;
-        int             nextorderId;
-        
-        OrderQueue      orderQueue;
-        Cart            cart;
+  Order orders[MAX_ORDERS];
+  int orderCount;
+  int nextOrderId;
 
-        MenuManager (Inventory & inv, CustomerBST& cust, AuthManager&y a);
+  OrderQueue orderQueue;
+  Cart cart;
 
-        void loadOrders (const string &path);
-        void saveOrders(const string &path) const;
+  MenuManager(Inventory &inv, CustomerBST &cust, AuthManager &y a);
 
-        void showLoginScreen();
-        void showMainMenu();
-        void showInventoryMenu();
-        void showCartMenu();
-        void showOrderMenu();
-        void showCustomerMenu();
-        void showReportMenu();
-        void showUserMenu();
+  void loadOrders(const std::string &path);
+  void saveOrders(const std::string &path) const;
 
-        static int getInt(const string &prompt, int min, int max);
-        static string getString(const string &prompt);
-        static bool confirm(const string &message);
-        static void header (const string &title);
+  void cls();
+  void pause();
+  void showLoginScreen();
+  void showMainMenu();
+  void showInventoryMenu();
+  void showCartMenu();
+  void showOrderMenu();
+  void showCustomerMenu();
+  void showReportMenu();
+  void showUserMenu();
+
+  static int getInt(const std::string &prompt, int min, int max);
+  static std::string getString(const std::string &prompt);
+  static bool confirm(const std::string &msg);
+  static void header(const std::string &title);
 };
+#endif
