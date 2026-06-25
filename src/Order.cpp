@@ -3,8 +3,6 @@
 #include <sstream>
 #include <iomanip>
 
-using namespace std;
-
 // ===========================================================
 // Order — free functions
 // ===========================================================
@@ -21,7 +19,7 @@ void initOrder(Order& o) {
 
 bool addOrderItem(Order& o, const OrderItem& item) {
     if (o.itemCount >= MAX_ITEMS) {
-        cout << "Order is full, cannot add more items.\n";
+        std::cout << "Order is full, cannot add more items.\n";
         return false;
     }
     o.items[o.itemCount] = item;
@@ -39,43 +37,43 @@ void recalculateOrderTotal(Order& o) {
 }
 
 void displayOrder(const Order& o) {
-    cout << "-------------------------------------------\n";
-    cout << "Order #" << o.orderId
+    std::cout << "-------------------------------------------\n";
+    std::cout << "Order #" << o.orderId
          << "  | Customer: " << o.customerName
          << "  | Status: " << o.status << "\n";
-    cout << "Date: " << o.dateCreated << "\n";
-    cout << left << setw(6) << "Qty" << setw(20) << "Product" << setw(10) << "Price" << "\n";
+    std::cout << "Date: " << o.dateCreated << "\n";
+    std::cout << std::left << std::setw(6) << "Qty" << std::setw(20) << "Product" << std::setw(10) << "Price" << "\n";
     for (int i = 0; i < o.itemCount; i++) {
-        cout << left << setw(6) << o.items[i].quantity
-             << setw(20) << o.items[i].productName
-             << setw(10) << fixed << setprecision(2) << o.items[i].unitPrice << "\n";
+        std::cout << std::left << std::setw(6) << o.items[i].quantity
+             << std::setw(20) << o.items[i].productName
+             << std::setw(10) << std::fixed << std::setprecision(2) << o.items[i].unitPrice << "\n";
     }
-    cout << "Total: $" << fixed << setprecision(2) << o.totalAmount << "\n";
-    cout << "-------------------------------------------\n";
+    std::cout << "Total: $" << std::fixed << std::setprecision(2) << o.totalAmount << "\n";
+    std::cout << "-------------------------------------------\n";
 }
 
-string orderToCSV(const Order& o) {
-    ostringstream oss;
+std::string orderToCSV(const Order& o) {
+    std::ostringstream oss;
     oss << o.orderId << "," << o.customerId << "," << o.customerName << ","
-        << fixed << setprecision(2) << o.totalAmount << ","
+        << std::fixed << std::setprecision(2) << o.totalAmount << ","
         << o.status << "," << o.dateCreated << "," << o.itemCount;
     return oss.str();
 }
 
-Order orderFromCSV(const string& line) {
+Order orderFromCSV(const std::string& line) {
     Order o;
     initOrder(o);
 
-    stringstream ss(line);
-    string field;
+    std::stringstream ss(line);
+    std::string field;
 
-    getline(ss, field, ','); o.orderId      = stoi(field);
-    getline(ss, field, ','); o.customerId   = stoi(field);
-    getline(ss, field, ','); o.customerName = field;
-    getline(ss, field, ','); o.totalAmount  = stod(field);
-    getline(ss, field, ','); o.status       = field;
-    getline(ss, field, ','); o.dateCreated  = field;
-    getline(ss, field, ','); o.itemCount    = field.empty() ? 0 : stoi(field);
+    std::getline(ss, field, ','); o.orderId      = std::stoi(field);
+    std::getline(ss, field, ','); o.customerId   = std::stoi(field);
+    std::getline(ss, field, ','); o.customerName = field;
+    std::getline(ss, field, ','); o.totalAmount  = std::stod(field);
+    std::getline(ss, field, ','); o.status       = field;
+    std::getline(ss, field, ','); o.dateCreated  = field;
+    std::getline(ss, field, ','); o.itemCount    = field.empty() ? 0 : std::stoi(field);
 
     return o;
 }
@@ -104,7 +102,7 @@ int orderQueueSize(const OrderQueue& q) {
 
 bool enqueueOrder(OrderQueue& q, const Order& o) {
     if (isOrderQueueFull(q)) {
-        cout << "Order queue is full, cannot accept new order.\n";
+        std::cout << "Order queue is full, cannot accept new order.\n";
         return false;
     }
     q.rear = (q.rear + 1) % MAX_QUEUE;
@@ -133,10 +131,10 @@ bool peekOrder(const OrderQueue& q, Order& out) {
 
 void displayAllOrders(const OrderQueue& q) {
     if (isOrderQueueEmpty(q)) {
-        cout << "No orders waiting in the queue.\n";
+        std::cout << "No orders waiting in the queue.\n";
         return;
     }
-    cout << "===== Orders in Queue (front -> rear) =====\n";
+    std::cout << "===== Orders in Queue (front -> rear) =====\n";
     int idx = q.front;
     for (int i = 0; i < q.count; i++) {
         displayOrder(q.items[idx]);
