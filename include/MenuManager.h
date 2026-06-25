@@ -6,6 +6,8 @@
 #include "Inventory.h"
 #include "Order.h"
 
+const int MAX_ORDERS = 100;
+
 class MenuManager {
 public:
   Inventory &inventory;
@@ -19,7 +21,7 @@ public:
   OrderQueue orderQueue;
   Cart cart;
 
-  MenuManager(Inventory &inv, CustomerBST &cust, AuthManager &y a);
+  MenuManager(Inventory &inv, CustomerBST &cust, AuthManager &a);
 
   void loadOrders(const std::string &path);
   void saveOrders(const std::string &path) const;

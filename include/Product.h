@@ -1,21 +1,22 @@
 #ifndef PRODUCT_H
 #define PRODUCT_H
 
-#include "Models.h"
-#include <vector>
 #include <string>
 
-// Load all products from data/products.csv
-std::vector<Product> loadProducts();
+struct Product {
+    int id;
+    std::string sku; // e.g. "SHOE-001"
+    std::string name;
+    std::string category;
+    double price;
+    int quantity;
+    int reorderThreshold;
+    int reorderLevel; // For compatibility with MenuManager.cpp
 
-// Save all products to data/products.csv
-void saveProducts(const std::vector<Product>& products);
-
-// Validate a product; if isNew, checks for duplicate ID
-bool validateProduct(const Product& p, std::string& errorMsg,
-                     const std::vector<Product>& existingProducts, bool isNew);
-
-// Interactive CLI menu for Product CRUD
-void productMenu();
+    bool isLowStock() const;
+    void display() const;
+    std::string toCSV() const;
+    static Product fromCSV(const std::string& line);
+};
 
 #endif // PRODUCT_H

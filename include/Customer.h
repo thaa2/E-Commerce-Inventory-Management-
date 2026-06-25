@@ -1,21 +1,44 @@
 #ifndef CUSTOMER_H
 #define CUSTOMER_H
 
-#include "Models.h"
-#include <vector>
 #include <string>
+#include <fstream>
 
-// Load all customers from data/customers.csv
-std::vector<Customer> loadCustomers();
+struct Customer {
+    int id;
+    std::string name;
+    std::string email;
+    std::string phone;
 
-// Save all customers to data/customers.csv
-void saveCustomers(const std::vector<Customer>& customers);
+    void display() const;
+};
 
-// Validate a customer; if isNew, checks for duplicate ID
-bool validateCustomer(const Customer& c, std::string& errorMsg,
-                      const std::vector<Customer>& existingCustomers, bool isNew);
+struct CustomerNode {
+    Customer data;
+    CustomerNode* left;
+    CustomerNode* right;
+};
 
-// Interactive CLI menu for Customer CRUD
-void customerMenu();
+class CustomerBST {
+private:
+    CustomerNode* root;
+    int nextId;
+
+    CustomerNode* insertHelper(CustomerNode* node, const Customer& c);
+    CustomerNode* searchHelper(CustomerNode* node, const std::string& name);
+    void displayAllHelper(CustomerNode* node) const;
+    void saveToFileHelper(CustomerNode* node, std::ofstream& file) const;
+    void destroyTree(CustomerNode* node);
+
+public:
+    CustomerBST();
+    ~CustomerBST();
+
+    void insert(Customer c);
+    CustomerNode* search(const std::string& name);
+    void displayAll() const;
+    void saveToFile(const std::string& filepath) const;
+    void loadFromFile(const std::string& filepath);
+};
 
 #endif // CUSTOMER_H

@@ -1,7 +1,28 @@
-#ifndef AUTH_MANAGER_H
-#define AUTH_MANAGER_H
+#ifndef AUTHMANAGER_H
+#define AUTHMANAGER_H
 
-// Authentication is handled by the User system (User.h / User.cpp).
-// This header is kept for project structure consistency.
+#include "User.h"
+#include <string>
 
-#endif // AUTH_MANAGER_H
+class AuthManager {
+private:
+    UserRecord users[MAX_USERS];
+    int userCount;
+    UserRecord currentUser;
+
+public:
+    AuthManager();
+
+    bool login(const std::string& username, const std::string& password);
+    void logout();
+
+    std::string currentName() const;
+    bool isAdmin() const;
+    bool isAuthenticated() const;
+
+    void displayAll() const;
+    bool addUser(const UserRecord& u);
+    bool deactivateUser(int id);
+};
+
+#endif // AUTHMANAGER_H
