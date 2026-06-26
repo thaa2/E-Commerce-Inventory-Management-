@@ -1,6 +1,5 @@
-ID,Name,PasswordHash,RoleNum
-001,phadeth,6141,0
-002,sokhour,9418,0
-003,setha,9565,1
-004,sela,7696,2
-0099,hong,1816,2
+id,username,passwordHash,role,isActive
+1,phadeth,159734080,Admin,1
+2,sokhour,1423537881,Admin,1
+3,setha,304498800,Staff,1
+4,sela,2342145504,Manager,1

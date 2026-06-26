@@ -1,28 +1,33 @@
-#ifndef AUTHMANAGER_H
-#define AUTHMANAGER_H
-
+#pragma once
 #include "User.h"
 #include <string>
 
+const int MAX_USERS = 50;
+
 class AuthManager {
 private:
-    UserRecord users[MAX_USERS];
+    User users[MAX_USERS];
     int userCount;
-    UserRecord currentUser;
+    int nextId;
+    int currentIndex;
 
 public:
     AuthManager();
 
+    void seedAdmin();
     bool login(const std::string& username, const std::string& password);
     void logout();
-
-    std::string currentName() const;
+    bool isLoggedIn() const;
     bool isAdmin() const;
-    bool isAuthenticated() const;
+    std::string currentName() const;
 
-    void displayAll() const;
-    bool addUser(const UserRecord& u);
+    bool addUser(User u);
     bool deactivateUser(int id);
-};
+    void displayAll() const;
 
-#endif // AUTHMANAGER_H
+    void loadFromFile(const std::string& path);
+    void saveToFile(const std::string& path) const;
+
+    // Getter methods - defined inline in header
+    int getUserCount() const { return userCount; }
+};

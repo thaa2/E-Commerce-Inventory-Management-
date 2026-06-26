@@ -1,24 +1,16 @@
 #pragma once
 #include <string>
 
-enum Role {
-    ADMIN,
-    STAFF,
-    CUSTOMER,
-    NONE
+struct User{
+    int id;
+    std::string username;
+    std::string passwordHash;
+    std::string role;
+    bool isActive;
+
+    User();
+    static std::string hashPassword(const std::string& pass);
+    bool verifyPassword(const std::string& pass) const;
+    std::string toCSV() const;
+    static User fromCSV(const std::string& line);
 };
-
-struct UserRecord {
-    std::string id;            
-    std::string name;          
-    std::string passwordHash;  
-    Role role;                 
-};
-
-const int MAX_USERS = 100;
-
-std::string hashPassword(const std::string& password);
-void UserCSV();
-void loadCSVToArray(UserRecord userArray[], int& userCount);
-int signUp(UserRecord userArray[], int& userCount, const std::string& new_id, const std::string& new_name, const std::string& new_password);
-UserRecord verUsr(UserRecord userArray[], int userCount, const std::string& in_id, const std::string& in_password);

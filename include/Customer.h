@@ -1,6 +1,4 @@
-#ifndef CUSTOMER_H
-#define CUSTOMER_H
-
+#pragma once
 #include <string>
 #include <fstream>
 
@@ -10,7 +8,10 @@ struct Customer {
     std::string email;
     std::string phone;
 
+    Customer();
     void display() const;
+    std::string toCSV() const;
+    static Customer fromCSV(const std::string& line);
 };
 
 struct CustomerNode {
@@ -22,23 +23,21 @@ struct CustomerNode {
 class CustomerBST {
 private:
     CustomerNode* root;
+    int count;
     int nextId;
 
-    CustomerNode* insertHelper(CustomerNode* node, const Customer& c);
-    CustomerNode* searchHelper(CustomerNode* node, const std::string& name);
-    void displayAllHelper(CustomerNode* node) const;
-    void saveToFileHelper(CustomerNode* node, std::ofstream& file) const;
-    void destroyTree(CustomerNode* node);
+    CustomerNode* insertHelper(CustomerNode* node, Customer c);
+    void inOrder(CustomerNode* node) const;
+    void saveInOrder(CustomerNode* node, std::ofstream& file) const;
+    void destroy(CustomerNode* node);
 
 public:
     CustomerBST();
     ~CustomerBST();
 
     void insert(Customer c);
-    CustomerNode* search(const std::string& name);
+    CustomerNode* search(const std::string& name) const;
     void displayAll() const;
-    void saveToFile(const std::string& filepath) const;
-    void loadFromFile(const std::string& filepath);
+    void loadFromFile(const std::string& path);
+    void saveToFile(const std::string& path) const;
 };
-
-#endif // CUSTOMER_H
