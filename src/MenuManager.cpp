@@ -554,13 +554,13 @@ void MenuManager::showUserMenu() {
       pause();
     } else if (ch == 2) {
       header("ADD USER");
-      UserRecord u;
-      u.name = getString("Username: ");
+      User u;
+      u.username = getString("Username: ");
       std::string pass = getString("Password: ");
-      u.passwordHash = hashPassword(pass);
+      u.passwordHash = User::hashPassword(pass);
       int r = getInt("Role (1=Admin 2=Staff): ", 1, 2);
-      u.role = (r == 1) ? ADMIN : STAFF;
-      u.id = "00" + std::to_string(rand() % 100 + 10); // Simple ID generator
+      u.role = (r == 1) ? "Admin" : "Staff";
+      u.id = rand()%100+10; // Simple ID generator
       if (auth.addUser(u)) {
         std::cout << " User added\n";
       } else {
