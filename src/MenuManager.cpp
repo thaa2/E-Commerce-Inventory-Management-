@@ -63,39 +63,41 @@ void MenuManager::header(const std::string &title) {
 }
 
 void MenuManager::pause() {
-  std::cout << " Press ENTER to continue...";
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << " Press ENTER to continue...";
+    std::string dummy;
+    std::getline(std::cin, dummy);
 }
 
 int MenuManager::getInt(const std::string &prompt, int minVal, int maxVal) {
-  int val;
-  while (true) {
-    std::cout << " " << prompt;
-    std::cin >> val;
-    if (!std::cin.fail() && val >= minVal && val <= maxVal) {
-      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-      return val;
-    } else {
-      std::cin.clear();
-      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-      std::cout << "! Enter a number " << minVal << "-" << maxVal << ".\n";
+    while (true) {
+        std::cout << " " << prompt;
+        std::string line;
+        std::getline(std::cin, line);
+        if (line.empty()) continue;        // ← skip empty lines
+        try {
+            int val = std::stoi(line);
+            if (val >= minVal && val <= maxVal)
+                return val;
+            std::cout << "! Enter " << minVal << "-" << maxVal << ".\n";
+        } catch (...) {
+            std::cout << "! Numbers only.\n";
+        }
     }
-  }
 }
 
+
 std::string MenuManager::getString(const std::string &prompt) {
-  std::string val;
-  std::cout << " " << prompt;
-  std::getline(std::cin, val);
-  return val;
+    std::cout << " " << prompt;
+    std::string val;
+    std::getline(std::cin, val);
+    return val;
 }
 
 bool MenuManager::confirm(const std::string &msg) {
-  std::cout << " " << msg << "(y/n): ";
-  char c;
-  std::cin >> c;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  return c == 'y' || c == 'Y';
+    std::cout << " " << msg << " (y/n): ";
+    std::string line;
+    std::getline(std::cin, line);
+    return (!line.empty() && (line[0] == 'y' || line[0] == 'Y'));
 }
 
 // LOGIN
@@ -133,6 +135,8 @@ void MenuManager::showLoginScreen() {
 // MAIN MENU
 
 void MenuManager::showMainMenu() {
+  std::cin.clear();
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   while (true) {
     cls();
     header("MAIN MENU [" + auth.currentName() + "-" +

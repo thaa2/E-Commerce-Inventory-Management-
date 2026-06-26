@@ -3,6 +3,9 @@
 #include "../include/FileManager.h"
 #include "../include/Inventory.h"
 #include "../include/MenuManager.h"
+#include <iostream>
+#include <cstdlib>
+
 
 int main() {
   
@@ -21,5 +24,6 @@ int main() {
   MenuManager menu(inventory, customers, auth);
   menu.loadOrders("data/orders.csv");
   menu.showLoginScreen();
+  menu.showMainMenu();
   return 0;
 }
