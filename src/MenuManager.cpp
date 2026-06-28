@@ -4,9 +4,11 @@
 #include "../include/Inventory.h"
 #include "../include/Order.h"
 #include "../include/User.h"
+#include "../include/FileManager.h"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <ctime>
 #include <limits>
 
 // Helper to build order from Cart
@@ -18,7 +20,21 @@ static Order buildOrderFromCart(const Cart &c, int orderId, int customerId,
   o.orderId = orderId;
   o.customerId = customerId;
   o.customerName = customerName;
-  o.dateCreated = "2026-06-25";
+  // Set current date YYYY-MM-DD
+  {
+    std::time_t t = std::time(nullptr);
+    std::tm localTm;
+#ifdef _WIN32
+    localtime_s(&localTm, &t);
+#else
+    localtime_r(&t, &localTm);
+#endif
+    char buf[20];
+    std::snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d",
+                  localTm.tm_year + 1900, localTm.tm_mon + 1, localTm.tm_mday,
+                  localTm.tm_hour, localTm.tm_min, localTm.tm_sec);
+    o.dateCreated = buf;
+  }
   o.status = "Pending";
   o.itemCount = 0;
   for (int i = 0; i < c.itemCount && i < MAX_ITEMS; i++) {
@@ -590,16 +606,15 @@ void MenuManager::showUserMenu() {
 // LOAD / SAVE ORDER
 
 void MenuManager::loadOrders(const std::string &path) {
-  std::ifstream file(path);
-  if (!file.is_open()) {
-    return;
-  }
-  std::string line;
-  std::getline(file, line); // skip header
-  while (std::getline(file, line)) {
-    if (line.empty())
+  ensureFile(path);
+  std::string lines[MAX_ORDERS + 10];
+  int lineCount = readLines(path, lines, MAX_ORDERS + 10);
+  if (lineCount <= 1) return;
+
+  for (int i = 1; i < lineCount && orderCount < MAX_ORDERS; i++) {
+    if (lines[i].empty())
       continue;
-    orders[orderCount] = orderFromCSV(line);
+    orders[orderCount] = orderFromCSV(lines[i]);
     if (orders[orderCount].orderId >= nextOrderId) {
       nextOrderId = orders[orderCount].orderId + 1;
     }
@@ -608,9 +623,11 @@ void MenuManager::loadOrders(const std::string &path) {
 }
 
 void MenuManager::saveOrders(const std::string &path) const {
-  std::ofstream file(path);
-  file << "orderId,customerId,customerName,date,discount,status,items\n";
+  std::string lines[MAX_ORDERS + 1];
+  int lineCount = 0;
+  lines[lineCount++] = "orderId,customerId,customerName,date,discount,status,items";
   for (int i = 0; i < orderCount; i++) {
-    file << orderToCSV(orders[i]) << "\n";
+    lines[lineCount++] = orderToCSV(orders[i]);
   }
+  writeLines(path, lines, lineCount);
 }

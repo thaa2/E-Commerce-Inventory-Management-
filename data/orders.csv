@@ -1,1 +1,2 @@
-OrderID,CustomerID,Date,TotalAmount,Items
+orderId,customerId,customerName,date,discount,status,items
+2,0,setha,1039.98,Complete,2026-06-28,2,1;Laptop;1;999.99|3;USB-C Hub;1;39.99

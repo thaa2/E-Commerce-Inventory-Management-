@@ -1,4 +1,5 @@
 #include "../include/AuthManager.h"
+#include "../include/FileManager.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -78,30 +79,25 @@ void AuthManager::displayAll() const {
 }
 
 void AuthManager::loadFromFile(const std::string& path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        std::cout << "Warning: Could not open " << path << std::endl;
-        return;
-    }
-    
-    std::string line;
-    // Skip header
-    if (std::getline(file, line)) {
-        // Header line - do nothing
-    }
-    
-    while (std::getline(file, line)) {
-        if (line.empty()) continue;
-        users[userCount] = User::fromCSV(line);
+    ensureFile(path);
+    std::string lines[MAX_USERS + 10];
+    int lineCount = readLines(path, lines, MAX_USERS + 10);
+    if (lineCount <= 1) return;
+
+    for (int i = 1; i < lineCount && userCount < MAX_USERS; i++) {
+        if (lines[i].empty()) continue;
+        users[userCount] = User::fromCSV(lines[i]);
         if (users[userCount].id >= nextId) nextId = users[userCount].id + 1;
         userCount++;
     }
-    file.close();
 }
 
 void AuthManager::saveToFile(const std::string& path) const {
-    std::ofstream file(path);
-    file << "id,username,passwordHash,role,isActive\n";
-    for (int i = 0; i < userCount; i++)
-        file << users[i].toCSV() << "\n";
+    std::string lines[MAX_USERS + 1];
+    int lineCount = 0;
+    lines[lineCount++] = "id,username,passwordHash,role,isActive";
+    for (int i = 0; i < userCount; i++) {
+        lines[lineCount++] = users[i].toCSV();
+    }
+    writeLines(path, lines, lineCount);
 }

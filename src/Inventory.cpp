@@ -1,4 +1,5 @@
 #include "../include/Inventory.h"
+#include "../include/FileManager.h"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -245,32 +246,30 @@ double Inventory::totalValue() {
 }
 
 void Inventory::loadFromFile(const std::string &filepath) {
-  std::ifstream file(filepath);
-  if (!file.is_open())
-    return;
+  ensureFile(filepath);
+  std::string lines[1000];
+  int lineCount = readLines(filepath, lines, 1000);
+  if (lineCount <= 1) return;
 
-  std::string line;
-  std::getline(file, line); // Skip header line
-
-  while (std::getline(file, line)) {
-    if (line.empty())
+  for (int i = 1; i < lineCount; i++) {
+    if (lines[i].empty())
       continue;
-    Product p = Product::fromCSV(line);
+    Product p = Product::fromCSV(lines[i]);
+    if (p.sku.empty() || p.name.empty())
+      continue;
     addProduct(p);
   }
-  file.close();
 }
 
 void Inventory::saveToFile(const std::string &filepath) const {
-  std::ofstream file(filepath);
-  if (!file.is_open())
-    return;
+  std::string lines[1000];
+  int lineCount = 0;
+  lines[lineCount++] = "id,sku,name,category,price,quantity,reorderThreshold";
 
-  file << "id,sku,name,category,price,quantity,reorderThreshold\n";
   ProductNode *curr = head;
   while (curr != nullptr) {
-    file << curr->data.toCSV() << "\n";
+    lines[lineCount++] = curr->data.toCSV();
     curr = curr->next;
   }
-  file.close();
+  writeLines(filepath, lines, lineCount);
 }

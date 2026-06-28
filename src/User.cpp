@@ -1,4 +1,5 @@
 #include "../include/User.h"
+#include "../include/FileManager.h"
 #include <sstream>
 #include <string>
 #include <cctype>

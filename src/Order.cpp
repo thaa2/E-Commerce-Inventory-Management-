@@ -54,9 +54,23 @@ void displayOrder(const Order& o) {
 
 std::string orderToCSV(const Order& o) {
     std::ostringstream oss;
+    // Basic fields
     oss << o.orderId << "," << o.customerId << "," << o.customerName << ","
         << std::fixed << std::setprecision(2) << o.totalAmount << ","
         << o.status << "," << o.dateCreated << "," << o.itemCount;
+
+    // Serialize items as a single trailing field: each item -> id;name;qty;price separated by '|'
+    if (o.itemCount > 0) {
+        oss << ",";
+        for (int i = 0; i < o.itemCount; ++i) {
+            const OrderItem &it = o.items[i];
+            // replace any '|' or ';' in productName to avoid breaking format
+            std::string pname = it.productName;
+            for (char &c : pname) if (c == '|' || c == ';') c = ',';
+            oss << it.productId << ";" << pname << ";" << it.quantity << ";" << std::fixed << std::setprecision(2) << it.unitPrice;
+            if (i < o.itemCount - 1) oss << "|";
+        }
+    }
     return oss.str();
 }
 
@@ -67,13 +81,46 @@ Order orderFromCSV(const std::string& line) {
     std::stringstream ss(line);
     std::string field;
 
-    std::getline(ss, field, ','); o.orderId      = std::stoi(field);
-    std::getline(ss, field, ','); o.customerId   = std::stoi(field);
-    std::getline(ss, field, ','); o.customerName = field;
-    std::getline(ss, field, ','); o.totalAmount  = std::stod(field);
-    std::getline(ss, field, ','); o.status       = field;
-    std::getline(ss, field, ','); o.dateCreated  = field;
-    std::getline(ss, field, ','); o.itemCount    = field.empty() ? 0 : std::stoi(field);
+    // Read fixed fields
+    if (!std::getline(ss, field, ',')) return o; o.orderId = std::stoi(field);
+    if (!std::getline(ss, field, ',')) return o; o.customerId = std::stoi(field);
+    if (!std::getline(ss, field, ',')) return o; o.customerName = field;
+    if (!std::getline(ss, field, ',')) return o; o.totalAmount = field.empty() ? 0.0 : std::stod(field);
+    if (!std::getline(ss, field, ',')) return o; o.status = field;
+    if (!std::getline(ss, field, ',')) return o; o.dateCreated = field;
+
+    // itemCount
+    if (!std::getline(ss, field, ',')) {
+        // no more fields
+        return o;
+    }
+    o.itemCount = field.empty() ? 0 : std::stoi(field);
+
+    // Remaining part (if any) is the serialized items field
+    std::string itemsField;
+    if (std::getline(ss, itemsField)) {
+        if (!itemsField.empty()) {
+            // split by '|'
+            std::stringstream itemsSS(itemsField);
+            std::string itemToken;
+            int idx = 0;
+            while (std::getline(itemsSS, itemToken, '|') && idx < MAX_ITEMS) {
+                // split itemToken by ';' -> id;name;qty;price
+                std::stringstream itSS(itemToken);
+                std::string f0,f1,f2,f3;
+                if (std::getline(itSS, f0, ';') && std::getline(itSS, f1, ';') && std::getline(itSS, f2, ';') && std::getline(itSS, f3, ';')) {
+                    OrderItem it;
+                    try { it.productId = std::stoi(f0); } catch(...) { it.productId = 0; }
+                    it.productName = f1;
+                    try { it.quantity = std::stoi(f2); } catch(...) { it.quantity = 0; }
+                    try { it.unitPrice = std::stod(f3); } catch(...) { it.unitPrice = 0.0; }
+                    o.items[idx++] = it;
+                }
+            }
+            // If items parsed, set itemCount to parsed count (trust file) but ensure consistency
+            if (idx > 0) o.itemCount = idx;
+        }
+    }
 
     return o;
 }
