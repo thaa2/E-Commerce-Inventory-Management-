@@ -42,6 +42,7 @@ struct Cart {
 void   initCart(Cart& c);                                  // reset to defaults
 bool   addItem(Cart& c, const CartItem& item, int availableStock);
 bool   removeItem(Cart& c, int productId);
+bool   removeItemQty(Cart& c, int productId, int qty);
 bool   undoLast(Cart& c);
 void   displayCart(const Cart& c);
 bool   isCartEmpty(const Cart& c);

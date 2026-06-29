@@ -84,6 +84,27 @@ bool removeItem(Cart& c, int productId) {
     return true;
 }
 
+bool removeItemQty(Cart& c, int productId, int qty) {
+    int idx = findCartIndexByProductId(c, productId);
+    if (idx == -1) {
+        return false;
+    }
+    if (qty <= 0) {
+        std::cout << "Quantity must be positive.\n";
+        return false;
+    }
+    if (qty > c.items[idx].quantity) {
+        std::cout << "Not enough quantity in cart.\n";
+        return false;
+    }
+    if (qty == c.items[idx].quantity) {
+        return removeItem(c, productId);
+    }
+
+    c.items[idx].quantity -= qty;
+    return true;
+}
+
 bool undoLast(Cart& c) {
     CartAction last;
     if (!popCartHistory(c, last)) {
@@ -110,9 +131,11 @@ void displayCart(const Cart& c) {
         return;
     }
     std::cout << "===== Your Cart =====\n";
-    std::cout << std::left << std::setw(6) << "Qty" << std::setw(20) << "Product" << std::setw(10) << "Price" << "\n";
+    std::cout << std::left << std::setw(6) << "Id" << std::setw(6) << "Qty" << std::setw(20) << "Product" << std::setw(10) << "Price" << "\n";
     for (int i = 0; i < c.itemCount; i++) {
-        std::cout << std::left << std::setw(6) << c.items[i].quantity
+
+        std::cout << std::left << std::setw(6) << c.items[i].productId
+            << std::left << std::setw(6) << c.items[i].quantity
              << std::setw(20) << c.items[i].productName
              << std::setw(10) << std::fixed << std::setprecision(2) << c.items[i].unitPrice << "\n";
     }

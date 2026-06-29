@@ -327,7 +327,7 @@ void MenuManager::showCartMenu() {
       pause();
     } else if (ch == 2) {
       header("ADD ITEM");
-      std::string sku = getString("Product SKU: ");
+      std::string sku = getString("Product SKU(P001): ");
       int id = inventory.hashSearch(sku);
       if (id == -1) {
         std::cout << " ! Product Not Found\n";
@@ -337,7 +337,7 @@ void MenuManager::showCartMenu() {
       Product *p = inventory.findById(id);
       p->display();
       std::cout << "Stock Available: " << p->quantity << "\n";
-      int qty = getInt("Quantity", 1, p->quantity);
+      int qty = getInt("Quantity: ", 1, p->quantity);
 
       CartItem item;
       item.productId = p->id;
@@ -352,12 +352,34 @@ void MenuManager::showCartMenu() {
       header("REMOVE ITEM");
       displayCart(cart);
       int id = getInt("Product ID to remove: ", 1, 999999);
-      if (removeItem(cart, id)) {
-        std::cout << " Removed.\n";
-      } else {
+      int idx = findCartIndexByProductId(cart, id);
+      if (idx == -1) {
         std::cout << " ! Not in cart.\n";
         pause();
+        continue;
       }
+
+      int availableQty = cart.items[idx].quantity;
+      std::cout << "1. Remove partial quantity\n";
+      std::cout << "2. Remove all\n";
+      int option = getInt("Choose: ", 1, 2);
+      if (option == 1) {
+        int qty = getInt("Qty: ", 1, availableQty);
+        if (removeItemQty(cart, id, qty)) {
+          std::cout << "Removed " << qty << " item(s) from cart.\n";
+        } else {
+          std::cout << " ! Could not remove quantity.\n";
+        }
+      } else if (option == 2) {
+        if (removeItem(cart, id)) {
+          std::cout << "Removed item from cart.\n";
+        } else {
+          std::cout << " ! Could not remove item.\n";
+        }
+      } else {
+        std::cout << " ! Invalid choice.\n";
+      }
+      pause();
     } else if (ch == 4) {
       header("UNDO");
       if (!undoLast(cart)) {
@@ -369,6 +391,7 @@ void MenuManager::showCartMenu() {
     } else if (ch == 5) {
       header("CHECKOUT");
       if (isCartEmpty(cart)) {
+        std::cout<<"there is no item in cart!!"
         pause();
         continue;
       }
@@ -381,7 +404,7 @@ void MenuManager::showCartMenu() {
         std::cout << "Walk-in customer\n";
       }
       double discount = 0;
-      if (auth.isAdmin()) {
+      if (auth.isAdmin()) 
         discount = getInt("Discount amount: ", 0, 9999);
       }
       if (!confirm("Confirm Checkout?")) {
