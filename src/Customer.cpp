@@ -1,5 +1,4 @@
 #include "../include/Customer.h"
-#include "../include/FileManager.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -19,7 +18,6 @@ std::string Customer::toCSV() const {
     return std::to_string(id) + "," + name + "," + email + "," + phone;
 }
 
-// Helper function to trim whitespace
 std::string trim_customer(const std::string& str) {
     size_t start = str.find_first_not_of(" \t\n\r\f\v");
     if (start == std::string::npos) return "";
@@ -27,7 +25,6 @@ std::string trim_customer(const std::string& str) {
     return str.substr(start, end - start + 1);
 }
 
-// Helper function to safely convert string to int
 int safe_stoi_customer(const std::string& str) {
     std::string trimmed = trim_customer(str);
     if (trimmed.empty()) return 0;
@@ -72,6 +69,10 @@ void CustomerBST::destroy(CustomerNode* node) {
 }
 
 void CustomerBST::insert(Customer c) {
+    if (search(c.name) !=nullptr){
+        std::cout<<"Customer "<<c.name<<" already exist!\n";
+        return;
+    }
     c.id   = nextId++;
     root   = insertHelper(root, c);
     count++;
@@ -121,31 +122,45 @@ void CustomerBST::inOrder(CustomerNode* node) const {
 }
 
 void CustomerBST::loadFromFile(const std::string& path) {
-    ensureFile(path);
-    std::string lines[1000];
-    int lineCount = readLines(path, lines, 1000);
-    if (lineCount <= 1) return;
-
-    for (int i = 1; i < lineCount; i++) {
-        if (lines[i].empty()) continue;
-        Customer c = Customer::fromCSV(lines[i]);
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cout << "Warning: Could not open " << path << std::endl;
+        return;
+    }
+    
+    std::string line;
+    // Skip header
+    if (std::getline(file, line)) {
+        // Header line - do nothing
+    }
+    
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        
+        // Check if line has at least 4 fields
+        int commaCount = 0;
+        for (char c : line) {
+            if (c == ',') commaCount++;
+        }
+        if (commaCount < 3) continue; // Skip invalid lines
+        
+        Customer c = Customer::fromCSV(line);
         root = insertHelper(root, c);
         if (c.id >= nextId) nextId = c.id + 1;
         count++;
     }
+    file.close();
 }
 
 void CustomerBST::saveToFile(const std::string& path) const {
-    std::string lines[1000];
-    int lineCount = 0;
-    lines[lineCount++] = "id,name,email,phone";
-    saveInOrder(root, lines, lineCount);
-    writeLines(path, lines, lineCount);
+    std::ofstream file(path);
+    file << "id,name,email,phone\n";
+    saveInOrder(root, file);
 }
 
-void CustomerBST::saveInOrder(CustomerNode* node, std::string lines[], int& lineCount) const {
+void CustomerBST::saveInOrder(CustomerNode* node, std::ofstream& file) const {
     if (node == nullptr) return;
-    saveInOrder(node->left, lines, lineCount);
-    lines[lineCount++] = node->data.toCSV();
-    saveInOrder(node->right, lines, lineCount);
+    saveInOrder(node->left, file);
+    file << node->data.toCSV() << "\n";
+    saveInOrder(node->right, file);
 }

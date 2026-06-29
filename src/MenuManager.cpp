@@ -498,9 +498,33 @@ void MenuManager::showCustomerMenu() {
       header("ADD CUSTOMER");
       Customer c;
       c.id = 0;
-      c.name = getString("Name    :");
-      c.email = getString("Email  :");
-      c.phone = getString("Phone  :");
+
+      do{
+        c.name = getString("Name    :");
+        if(c.name.empty()){
+          std::cout<<"Name is required!\n"; 
+        }
+      }while(c.name.empty());
+
+      do{
+        c.email = getString("Email  :");
+        if(c.email.empty()){
+          std::cout<<"Email is required!\n";
+        }
+      }while(c.email.empty());
+      
+      do{
+        c.phone = getString("Phone  :");
+        if(c.phone.empty()){
+          std::cout<<"Phone number is required!\n";
+        }
+      }while(c.phone.empty());
+      
+      if (customers.search(c.name) !=nullptr){
+        std::cout<<"customer "<<c.name<<"already exists!\n";
+        pause();
+        continue;
+      }
       customers.insert(c);
       customers.saveToFile("data/customers.csv");
       std::cout << "Customer added!\n";

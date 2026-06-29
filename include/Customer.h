@@ -28,7 +28,7 @@ private:
 
     CustomerNode* insertHelper(CustomerNode* node, Customer c);
     void inOrder(CustomerNode* node) const;
-    void saveInOrder(CustomerNode* node, std::string lines[], int& lineCount) const;
+    void saveInOrder(CustomerNode* node, std::ofstream& file) const;
     void destroy(CustomerNode* node);
 
 public:
