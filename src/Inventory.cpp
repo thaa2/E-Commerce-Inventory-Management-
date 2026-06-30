@@ -5,9 +5,13 @@
 #include <iomanip>
 #include <iostream>
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Constructor / Destructor
+// ══════════════════════════════════════════════════════════════════════════════
+
 Inventory::Inventory() {
-  head = nullptr;
-  count = 0;
+  head   = nullptr;
+  count  = 0;
   nextId = 1;
   for (int i = 0; i < HASH_SIZE; i++) {
     hashTable[i] = nullptr;
@@ -15,12 +19,14 @@ Inventory::Inventory() {
 }
 
 Inventory::~Inventory() {
+  // Free linked list
   ProductNode *curr = head;
   while (curr != nullptr) {
     ProductNode *nextNode = curr->next;
     delete curr;
     curr = nextNode;
   }
+  // Free hash-table chains
   for (int i = 0; i < HASH_SIZE; i++) {
     HashNode *hCurr = hashTable[i];
     while (hCurr != nullptr) {
@@ -30,6 +36,10 @@ Inventory::~Inventory() {
     }
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Private: hash-table helpers
+// ══════════════════════════════════════════════════════════════════════════════
 
 int Inventory::hashFunction(const std::string &key) const {
   int hash = 0;
@@ -53,11 +63,10 @@ void Inventory::removeHash(const std::string &key) {
   HashNode *prev = nullptr;
   while (curr != nullptr) {
     if (curr->key == key) {
-      if (prev == nullptr) {
+      if (prev == nullptr)
         hashTable[index] = curr->next;
-      } else {
+      else
         prev->next = curr->next;
-      }
       delete curr;
       return;
     }
@@ -66,42 +75,100 @@ void Inventory::removeHash(const std::string &key) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: hash search
+// ══════════════════════════════════════════════════════════════════════════════
+
 int Inventory::hashSearch(const std::string &sku) {
   int index = hashFunction(sku);
   HashNode *curr = hashTable[index];
   while (curr != nullptr) {
-    if (curr->key == sku) {
+    if (curr->key == sku)
       return curr->value;
-    }
     curr = curr->next;
   }
-  return -1;
+  return -1; // not found
 }
 
-void Inventory::addProduct(Product p) {
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: SKU helpers
+// ══════════════════════════════════════════════════════════════════════════════
+
+bool Inventory::skuExists(const std::string &sku) {
+  return hashSearch(sku) != -1;
+}
+
+Product *Inventory::findBySku(const std::string &sku) {
+  int id = hashSearch(sku);
+  if (id == -1)
+    return nullptr;
+  return findById(id);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: Add a brand-new product
+//   - Returns false (and prints an error) if the SKU already exists.
+//   - Returns true on success.
+// ══════════════════════════════════════════════════════════════════════════════
+
+bool Inventory::addProduct(Product p) {
+  // ── Duplicate-SKU guard ───────────────────────────────────────────────────
+  if (skuExists(p.sku)) {
+    std::cout << " [Error] SKU '" << p.sku
+              << "' already exists. Use 'Add Stock by SKU' to restock it.\n";
+    return false;
+  }
+
+  // ── Assign auto-ID if none provided ──────────────────────────────────────
   ProductNode *n = new ProductNode();
   n->data = p;
   if (n->data.id <= 0) {
     n->data.id = nextId++;
   } else {
-    if (n->data.id >= nextId) {
+    if (n->data.id >= nextId)
       nextId = n->data.id + 1;
-    }
   }
   n->next = nullptr;
 
+  // ── Append to end of linked list ─────────────────────────────────────────
   if (head == nullptr) {
     head = n;
   } else {
     ProductNode *temp = head;
-    while (temp->next != nullptr) {
+    while (temp->next != nullptr)
       temp = temp->next;
-    }
     temp->next = n;
   }
   count++;
   insertHash(n->data.sku, n->data.id);
+  return true;
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: Add stock to an existing product (identified by SKU)
+//   - Returns false (and prints an error) if the SKU is not found.
+//   - Returns true on success.
+// ══════════════════════════════════════════════════════════════════════════════
+
+bool Inventory::addStockBySku(const std::string &sku, int amount) {
+  Product *p = findBySku(sku);
+  if (p == nullptr) {
+    std::cout << " [Error] SKU '" << sku << "' not found in inventory.\n";
+    return false;
+  }
+  if (amount <= 0) {
+    std::cout << " [Error] Amount must be greater than zero.\n";
+    return false;
+  }
+  p->quantity += amount;
+  std::cout << " [OK] Added " << amount << " unit(s) to '" << p->name
+            << "'. New quantity: " << p->quantity << "\n";
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: Remove / find
+// ══════════════════════════════════════════════════════════════════════════════
 
 bool Inventory::removeProduct(int id) {
   if (head == nullptr)
@@ -134,43 +201,54 @@ bool Inventory::removeProduct(int id) {
 Product *Inventory::findById(int id) {
   ProductNode *curr = head;
   while (curr != nullptr) {
-    if (curr->data.id == id) {
+    if (curr->data.id == id)
       return &curr->data;
-    }
     curr = curr->next;
   }
   return nullptr;
 }
 
-void Inventory::displayAll() {
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: Display
+// ══════════════════════════════════════════════════════════════════════════════
+
+static void printInventoryHeader() {
   std::cout << std::left << std::setw(6) << "ID" << std::setw(15) << "SKU"
             << std::setw(25) << "Name" << std::setw(15) << "Category"
             << std::setw(10) << "Price" << std::setw(10) << "Quantity"
             << std::setw(10) << "Reorder" << "\n";
   std::cout << std::string(91, '-') << "\n";
+}
 
+void Inventory::displayAll() {
+  printInventoryHeader();
   ProductNode *curr = head;
   while (curr != nullptr) {
     curr->data.display();
     curr = curr->next;
   }
+  if (count == 0)
+    std::cout << " (no products)\n";
 }
 
 void Inventory::displayLowStock() {
-  std::cout << std::left << std::setw(6) << "ID" << std::setw(15) << "SKU"
-            << std::setw(25) << "Name" << std::setw(15) << "Category"
-            << std::setw(10) << "Price" << std::setw(10) << "Quantity"
-            << std::setw(10) << "Reorder" << "\n";
-  std::cout << std::string(91, '-') << "\n";
-
+  printInventoryHeader();
+  bool any = false;
   ProductNode *curr = head;
   while (curr != nullptr) {
     if (curr->data.isLowStock()) {
       curr->data.display();
+      any = true;
     }
     curr = curr->next;
   }
+  if (!any)
+    std::cout << " (all products are sufficiently stocked)\n";
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: Sorting
+// ══════════════════════════════════════════════════════════════════════════════
 
 int Inventory::copyToArray(Product arr[], int maxLimit) {
   int i = 0;
@@ -182,47 +260,63 @@ int Inventory::copyToArray(Product arr[], int maxLimit) {
   return i;
 }
 
-void Inventory::sortByPrice(Product arr[], int n) {
+// Selection-sort by price.
+//   ascending = true  → small to big  (low price first)
+//   ascending = false → big to small  (high price first)
+void Inventory::sortByPrice(Product arr[], int n, bool ascending) {
   for (int i = 0; i < n - 1; i++) {
-    int minIdx = i;
+    int pick = i;
     for (int j = i + 1; j < n; j++) {
-      if (arr[j].price < arr[minIdx].price) {
-        minIdx = j;
-      }
+      bool better = ascending ? (arr[j].price < arr[pick].price)
+                              : (arr[j].price > arr[pick].price);
+      if (better)
+        pick = j;
     }
-    Product temp = arr[i];
-    arr[i] = arr[minIdx];
-    arr[minIdx] = temp;
+    Product tmp = arr[i];
+    arr[i]    = arr[pick];
+    arr[pick] = tmp;
   }
 }
 
-void Inventory::sortByName(Product arr[], int n) {
+// Selection-sort by name (alphabetical).
+//   ascending = true  → A to Z
+//   ascending = false → Z to A
+void Inventory::sortByName(Product arr[], int n, bool ascending) {
   for (int i = 0; i < n - 1; i++) {
-    int minIdx = i;
+    int pick = i;
     for (int j = i + 1; j < n; j++) {
-      if (arr[j].name < arr[minIdx].name) {
-        minIdx = j;
-      }
+      bool better = ascending ? (arr[j].name < arr[pick].name)
+                              : (arr[j].name > arr[pick].name);
+      if (better)
+        pick = j;
     }
-    Product temp = arr[i];
-    arr[i] = arr[minIdx];
-    arr[minIdx] = temp;
+    Product tmp = arr[i];
+    arr[i]    = arr[pick];
+    arr[pick] = tmp;
   }
 }
 
-void Inventory::sortByQuantity(Product arr[], int n) {
+// Selection-sort by quantity.
+//   ascending = true  → small to big
+//   ascending = false → big to small
+void Inventory::sortByQuantity(Product arr[], int n, bool ascending) {
   for (int i = 0; i < n - 1; i++) {
-    int minIdx = i;
+    int pick = i;
     for (int j = i + 1; j < n; j++) {
-      if (arr[j].quantity < arr[minIdx].quantity) {
-        minIdx = j;
-      }
+      bool better = ascending ? (arr[j].quantity < arr[pick].quantity)
+                              : (arr[j].quantity > arr[pick].quantity);
+      if (better)
+        pick = j;
     }
-    Product temp = arr[i];
-    arr[i] = arr[minIdx];
-    arr[minIdx] = temp;
+    Product tmp = arr[i];
+    arr[i]    = arr[pick];
+    arr[pick] = tmp;
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: Stock / value
+// ══════════════════════════════════════════════════════════════════════════════
 
 bool Inventory::adjustStock(int id, int amount) {
   Product *p = findById(id);
@@ -245,11 +339,16 @@ double Inventory::totalValue() {
   return total;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Public: File I/O  (uses FileManager helpers, same as the original)
+// ══════════════════════════════════════════════════════════════════════════════
+
 void Inventory::loadFromFile(const std::string &filepath) {
   ensureFile(filepath);
   std::string lines[1000];
   int lineCount = readLines(filepath, lines, 1000);
-  if (lineCount <= 1) return;
+  if (lineCount <= 1)
+    return;
 
   for (int i = 1; i < lineCount; i++) {
     if (lines[i].empty())
@@ -257,7 +356,9 @@ void Inventory::loadFromFile(const std::string &filepath) {
     Product p = Product::fromCSV(lines[i]);
     if (p.sku.empty() || p.name.empty())
       continue;
-    addProduct(p);
+    // Bypass duplicate guard when loading our own CSV data
+    if (!skuExists(p.sku))
+      addProduct(p);
   }
 }
 

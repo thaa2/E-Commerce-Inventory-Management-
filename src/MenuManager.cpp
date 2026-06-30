@@ -209,92 +209,170 @@ void MenuManager::showInventoryMenu() {
     std::cout << " 3. Sort by Price\n";
     std::cout << " 4. Sort by Name\n";
     std::cout << " 5. Sort by Quantity\n";
-    std::cout << " 6. Low stock Alert\n";
+    std::cout << " 6. Low Stock Alert\n";
     if (auth.isAdmin()) {
-      std::cout << " 7. Add Product\n";
-      std::cout << " 8. Delete Product\n";
+      std::cout << " 7. Add New Product\n";
+      std::cout << " 8. Add Stock by SKU\n";
+      std::cout << " 9. Delete Product\n";
     }
     std::cout << " 0. Back\n\n";
 
-    int ch = getInt("Select: ", 0, 8);
-    if (ch == 0) {
+    int ch = getInt("Select: ", 0, 9);
+    if (ch == 0)
       return;
-    }
     cls();
+
+    // ── 1. View All ──────────────────────────────────────────────────────────
     if (ch == 1) {
       header("VIEW ALL\n");
       inventory.displayAll();
       pause();
+
+    // ── 2. Search by SKU ─────────────────────────────────────────────────────
     } else if (ch == 2) {
       header("SEARCH BY SKU\n");
       std::string sku = getString("SKU: ");
       int id = inventory.hashSearch(sku);
       if (id == -1) {
-        std::cout << "! NOT FOUND\n";
+        std::cout << " ! NOT FOUND\n";
       } else {
         Product *p = inventory.findById(id);
         if (p)
           p->display();
       }
       pause();
+
+    // ── 3. Sort by Price ─────────────────────────────────────────────────────
     } else if (ch == 3) {
       header("SORT BY PRICE\n");
+      std::cout << " 1. Ascending  (low -> high)\n";
+      std::cout << " 2. Descending (high -> low)\n";
+      int order = getInt("Select order: ", 1, 2);
+      bool asc = (order == 1);
       Product arr[200];
       int n = inventory.copyToArray(arr, 200);
-      inventory.sortByPrice(arr, n);
-      for (int i = 0; i < n; i++) {
+      inventory.sortByPrice(arr, n, asc);
+      std::cout << "\n" << (asc ? "Ascending" : "Descending") << " by Price:\n";
+      std::cout << std::left
+                << std::setw(6)  << "ID"
+                << std::setw(15) << "SKU"
+                << std::setw(25) << "Name"
+                << std::setw(15) << "Category"
+                << std::setw(10) << "Price"
+                << std::setw(10) << "Quantity"
+                << "Reorder\n";
+      std::cout << std::string(91, '-') << "\n";
+      for (int i = 0; i < n; i++)
         arr[i].display();
-      }
       pause();
+
+    // ── 4. Sort by Name ──────────────────────────────────────────────────────
     } else if (ch == 4) {
       header("SORT BY NAME\n");
+      std::cout << " 1. Ascending  (A -> Z)\n";
+      std::cout << " 2. Descending (Z -> A)\n";
+      int order = getInt("Select order: ", 1, 2);
+      bool asc = (order == 1);
       Product arr[200];
       int n = inventory.copyToArray(arr, 200);
-      inventory.sortByName(arr, n);
-      for (int i = 0; i < n; i++) {
+      inventory.sortByName(arr, n, asc);
+      std::cout << "\n" << (asc ? "Ascending" : "Descending") << " by Name:\n";
+      std::cout << std::left
+                << std::setw(6)  << "ID"
+                << std::setw(15) << "SKU"
+                << std::setw(25) << "Name"
+                << std::setw(15) << "Category"
+                << std::setw(10) << "Price"
+                << std::setw(10) << "Quantity"
+                << "Reorder\n";
+      std::cout << std::string(91, '-') << "\n";
+      for (int i = 0; i < n; i++)
         arr[i].display();
-      }
       pause();
+
+    // ── 5. Sort by Quantity ──────────────────────────────────────────────────
     } else if (ch == 5) {
       header("SORT BY QUANTITY\n");
+      std::cout << " 1. Ascending  (low -> high)\n";
+      std::cout << " 2. Descending (high -> low)\n";
+      int order = getInt("Select order: ", 1, 2);
+      bool asc = (order == 1);
       Product arr[200];
       int n = inventory.copyToArray(arr, 200);
-      inventory.sortByQuantity(arr, n);
-      for (int i = 0; i < n; i++) {
+      inventory.sortByQuantity(arr, n, asc);
+      std::cout << "\n" << (asc ? "Ascending" : "Descending") << " by Quantity:\n";
+      std::cout << std::left
+                << std::setw(6)  << "ID"
+                << std::setw(15) << "SKU"
+                << std::setw(25) << "Name"
+                << std::setw(15) << "Category"
+                << std::setw(10) << "Price"
+                << std::setw(10) << "Quantity"
+                << "Reorder\n";
+      std::cout << std::string(91, '-') << "\n";
+      for (int i = 0; i < n; i++)
         arr[i].display();
-      }
       pause();
+
+    // ── 6. Low Stock Alert ───────────────────────────────────────────────────
     } else if (ch == 6) {
       header("LOW STOCK ALERT\n");
       inventory.displayLowStock();
       pause();
-    } else if (ch == 7) {
-      header("ADD PRODUCT\n");
+
+    // ── 7. Add New Product (admin) ───────────────────────────────────────────
+    } else if (ch == 7 && auth.isAdmin()) {
+      header("ADD NEW PRODUCT\n");
       Product p;
       p.id = 0;
-      p.sku = getString("SKU  :");
-      p.name = getString("Name :");
-      p.category = getString("Category :");
-      p.price = getInt("Price  :", 0, 999999);
-      p.quantity = getInt("Quantity :", 0, 99999);
-      p.reorderLevel = getInt("Reorder Level  :", 0, 99999);
+      p.sku = getString("SKU      : ");
+      // Reject duplicate SKU early
+      if (inventory.skuExists(p.sku)) {
+        std::cout << " [Error] SKU '" << p.sku
+                  << "' already exists. Use option 8 to add stock instead.\n";
+        pause();
+        continue;
+      }
+      p.name             = getString("Name     : ");
+      p.category         = getString("Category : ");
+      p.price            = getInt("Price    : ", 0, 999999);
+      p.quantity         = getInt("Quantity : ", 0, 99999);
+      p.reorderLevel     = getInt("Reorder Level : ", 0, 99999);
       p.reorderThreshold = p.reorderLevel;
-      inventory.addProduct(p);
-      std::cout << " Product added\n";
-      inventory.saveToFile("data/products.csv");
+      if (inventory.addProduct(p)) {
+        std::cout << " [OK] Product added successfully.\n";
+        inventory.saveToFile("data/products.csv");
+      }
       pause();
+
+    // ── 8. Add Stock by SKU (admin) ──────────────────────────────────────────
     } else if (ch == 8 && auth.isAdmin()) {
-      header("DELETE PRODUCT\n");
-      int id = getInt("Product Id: ", 1, 999999);
-      Product *p = inventory.findById(id);
+      header("ADD STOCK BY SKU\n");
+      std::string sku = getString("Enter SKU to restock: ");
+      Product *p = inventory.findBySku(sku);
       if (!p) {
-        std::cout << "! Product not found\n";
+        std::cout << " [Error] SKU '" << sku << "' not found.\n";
       } else {
         p->display();
-        if (confirm("Delete this product?\n")) {
+        int amount = getInt("Amount to add: ", 1, 99999);
+        if (inventory.addStockBySku(sku, amount))
+          inventory.saveToFile("data/products.csv");
+      }
+      pause();
+
+    // ── 9. Delete Product (admin) ────────────────────────────────────────────
+    } else if (ch == 9 && auth.isAdmin()) {
+      header("DELETE PRODUCT\n");
+      int id = getInt("Product ID: ", 1, 999999);
+      Product *p = inventory.findById(id);
+      if (!p) {
+        std::cout << " ! Product not found\n";
+      } else {
+        p->display();
+        if (confirm("Delete this product?")) {
           inventory.removeProduct(id);
           inventory.saveToFile("data/products.csv");
-          std::cout << "DELETED!\n";
+          std::cout << " DELETED!\n";
         }
       }
       pause();
@@ -391,7 +469,7 @@ void MenuManager::showCartMenu() {
     } else if (ch == 5) {
       header("CHECKOUT");
       if (isCartEmpty(cart)) {
-        std::cout<<"there is no item in cart!!"
+        std::cout << "there is no item in cart!!\n";
         pause();
         continue;
       }
@@ -404,9 +482,8 @@ void MenuManager::showCartMenu() {
         std::cout << "Walk-in customer\n";
       }
       double discount = 0;
-      if (auth.isAdmin()) 
+      if (auth.isAdmin())
         discount = getInt("Discount amount: ", 0, 9999);
-      }
       if (!confirm("Confirm Checkout?")) {
         std::cout << "Cancelled\n";
         pause();
