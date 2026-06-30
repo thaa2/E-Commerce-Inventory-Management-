@@ -323,9 +323,16 @@ void MenuManager::showInventoryMenu() {
     // ── 7. Add New Product (admin) ───────────────────────────────────────────
     } else if (ch == 7 && auth.isAdmin()) {
       header("ADD NEW PRODUCT\n");
+      inventory.displayAll();
+      std::cout << "\n";
       Product p;
       p.id = 0;
       p.sku = getString("SKU      : ");
+      if (p.sku.empty()) {
+        std::cout << " [Error] SKU is required.\n";
+        pause();
+        continue;
+      }
       // Reject duplicate SKU early
       if (inventory.skuExists(p.sku)) {
         std::cout << " [Error] SKU '" << p.sku
@@ -333,8 +340,18 @@ void MenuManager::showInventoryMenu() {
         pause();
         continue;
       }
-      p.name             = getString("Name     : ");
-      p.category         = getString("Category : ");
+      p.name = getString("Name     : ");
+      if (p.name.empty()) {
+        std::cout << " [Error] Name is required.\n";
+        pause();
+        continue;
+      }
+      p.category = getString("Category : ");
+      if (p.category.empty()) {
+        std::cout << " [Error] Category is required.\n";
+        pause();
+        continue;
+      }
       p.price            = getInt("Price    : ", 0, 999999);
       p.quantity         = getInt("Quantity : ", 0, 99999);
       p.reorderLevel     = getInt("Reorder Level : ", 0, 99999);
@@ -342,12 +359,15 @@ void MenuManager::showInventoryMenu() {
       if (inventory.addProduct(p)) {
         std::cout << " [OK] Product added successfully.\n";
         inventory.saveToFile("data/products.csv");
+        inventory.saveCategories("data/categories.csv");
       }
       pause();
 
     // ── 8. Add Stock by SKU (admin) ──────────────────────────────────────────
     } else if (ch == 8 && auth.isAdmin()) {
       header("ADD STOCK BY SKU\n");
+      inventory.displayAll();
+      std::cout << "\n";
       std::string sku = getString("Enter SKU to restock: ");
       Product *p = inventory.findBySku(sku);
       if (!p) {
@@ -363,6 +383,8 @@ void MenuManager::showInventoryMenu() {
     // ── 9. Delete Product (admin) ────────────────────────────────────────────
     } else if (ch == 9 && auth.isAdmin()) {
       header("DELETE PRODUCT\n");
+      inventory.displayAll();
+      std::cout << "\n";
       int id = getInt("Product ID: ", 1, 999999);
       Product *p = inventory.findById(id);
       if (!p) {
@@ -372,6 +394,7 @@ void MenuManager::showInventoryMenu() {
         if (confirm("Delete this product?")) {
           inventory.removeProduct(id);
           inventory.saveToFile("data/products.csv");
+          inventory.saveCategories("data/categories.csv");
           std::cout << " DELETED!\n";
         }
       }
@@ -405,6 +428,7 @@ void MenuManager::showCartMenu() {
       pause();
     } else if (ch == 2) {
       header("ADD ITEM");
+      inventory.displayAll();
       std::string sku = getString("Product SKU(P001): ");
       int id = inventory.hashSearch(sku);
       if (id == -1) {

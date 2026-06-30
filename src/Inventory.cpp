@@ -374,3 +374,16 @@ void Inventory::saveToFile(const std::string &filepath) const {
   }
   writeLines(filepath, lines, lineCount);
 }
+
+void Inventory::saveCategories(const std::string &filepath) const {
+  std::string lines[1000];
+  int lineCount = 0;
+  ProductNode *curr = head;
+  while (curr != nullptr && lineCount < 1000) {
+    if (!curr->data.category.empty()) {
+      lines[lineCount++] = curr->data.category;
+    }
+    curr = curr->next;
+  }
+  writeLines(filepath, lines, lineCount);
+}

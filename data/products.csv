@@ -1,6 +1,6 @@
 id,sku,name,category,price,quantity,reorderThreshold
-1,P001,Laptop,,999.99,13,5
-2,P002,Wireless Mouse,,25.5,39,10
-3,P003,USB-C Hub,,39.99,29,8
-4,P004,Mechanical Keyboard,,79,20,5
-5,P005,Monitor Stand,,45,12,4
+1,P001,Laptop,Electronics,999.99,10,5
+2,P002,Wireless Mouse,Accessories,25.5,39,10
+3,P003,USB-C Hub,Accessories,39.99,24,8
+4,P004,Mechanical Keyboard,Accessories,79,20,5
+5,P005,Monitor Stand,Accessories,45,12,4

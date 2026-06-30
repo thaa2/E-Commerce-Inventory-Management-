@@ -65,6 +65,7 @@ public:
   // ── File I/O ───────────────────────────────────────────────────────────────
   void loadFromFile(const std::string &filepath);
   void saveToFile  (const std::string &filepath) const;
+  void saveCategories(const std::string &filepath) const;
 };
 
 #endif // INVENTORY_H
